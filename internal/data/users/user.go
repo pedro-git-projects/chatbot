@@ -2,8 +2,6 @@ package users
 
 import (
 	"time"
-
-	"github.com/pedro-git-projects/chatbot-back/internal/validator"
 )
 
 type User struct {
@@ -13,8 +11,4 @@ type User struct {
 	Name      string    `json:"name"`
 	Role      UserRole  `json:"role"`
 	ImageURL  string    `json:"image_url,omitempty"`
-}
-
-func ValidateUser(v *validator.Validator, user *User) {
-
 }
