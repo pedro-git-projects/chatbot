@@ -18,6 +18,7 @@ func (app *application) routes() *httprouter.Router {
 	router.Handle(http.MethodGet, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.getUserHandler)))
 	router.Handle(http.MethodPut, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.updateUserHandler)))
 	router.Handle(http.MethodPatch, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.updateUserHandler)))
+	router.Handle(http.MethodDelete, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.deleteUserHandler)))
 
 	return router
 }

@@ -121,6 +121,7 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 		app.unauthorizedResponse(w, r, "ID do usuário não foi encontrado no contexto da requisição")
 		return
 	}
+
 	payload := users.UpdateUserDTO{}
 
 	err := app.readJSON(w, r, &payload)
@@ -158,4 +159,19 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int64)
+	if !ok {
+		app.unauthorizedResponse(w, r, "ID do usuário não foi encontrado no contexto da requisição")
+		return
+	}
+
+	err := app.models.Users.Delete(userID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

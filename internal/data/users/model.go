@@ -120,5 +120,24 @@ func (m UserModel) Update(id int64, updatedUser *User) (*User, error) {
 }
 
 func (m UserModel) Delete(id int64) error {
+	query := `
+		DELETE FROM users
+		WHERE id = $1
+	`
+
+	result, err := m.DB.Exec(query, id)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Falha ao excluir usuário: %v", err))
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Falha ao obter número de linhas afetadas: %v", err))
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("Usuário não encontrado")
+	}
+
 	return nil
 }
