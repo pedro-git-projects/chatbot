@@ -13,6 +13,12 @@ func (app *application) routes() *httprouter.Router {
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthCheckHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/auth/create-user", app.createUserHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/auth/signup", app.createUserHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/auth/signin", app.signinUserHandler)
+	router.Handle(http.MethodGet, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.getUserHandler)))
+	router.Handle(http.MethodPut, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.updateUserHandler)))
+	router.Handle(http.MethodPatch, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.updateUserHandler)))
+	router.Handle(http.MethodDelete, "/v1/user", app.jwtMiddleware(http.HandlerFunc(app.deleteUserHandler)))
+
 	return router
 }
