@@ -26,3 +26,17 @@ func (dto CreateUserDTO) Validate(v *validator.Validator) {
 	validMail := err == nil
 	v.Check(validMail, "email", "deve ser um endereço de email válido")
 }
+
+type LoginUserDTO struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (dto LoginUserDTO) Validate(v *validator.Validator) {
+	v.Check(dto.Password != "", "senha", "é obrigatória")
+	v.Check(dto.Email != "", "senha", "é obrigatório")
+
+	_, err := mail.ParseAddress(dto.Email)
+	validMail := err == nil
+	v.Check(validMail, "email", "deve ser um endereço de email válido")
+}

@@ -27,7 +27,6 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 
 	v := validator.New()
 	payload.Validate(v)
-
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
@@ -43,12 +42,57 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, map[string]any{"user": user}, nil)
+	token, err := app.generateJWT(user.ID, user.Role)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	response := map[string]any{
+		"user":  user,
+		"token": token,
+	}
+
+	err = app.writeJSON(w, http.StatusCreated, response, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
 
-func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) signinUserHandler(w http.ResponseWriter, r *http.Request) {
+	payload := users.LoginUserDTO{}
 
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	v := validator.New()
+	payload.Validate(v)
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	user, err := app.models.Users.Authenticate(payload.Email, payload.Password)
+	if err != nil {
+		app.unauthorizedResponse(w, r, "Credenciais inválidas")
+		return
+	}
+
+	token, err := app.generateJWT(user.ID, user.Role)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	response := map[string]interface{}{
+		"user":  user,
+		"token": token,
+	}
+
+	if err := app.writeJSON(w, http.StatusOK, response, nil); err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

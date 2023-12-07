@@ -15,9 +15,10 @@ import (
 const version = "1.0.0"
 
 type config struct {
-	port int
-	env  string
-	db   struct {
+	port      int
+	env       string
+	jwtSecret string
+	db        struct {
 		dsn          string
 		maxOpenConns int
 		maxIdleConns int
@@ -51,6 +52,13 @@ func main() {
 	key := "DATABASE_URL"
 	if value, exists := getEnvValue(env, key); exists {
 		cfg.db.dsn = value
+	} else {
+		fmt.Printf("Chave %s não foi encontrada no arquivo .env\n", key)
+	}
+
+	key = "JWT_SECRET"
+	if value, exists := getEnvValue(env, key); exists {
+		cfg.jwtSecret = value
 	} else {
 		fmt.Printf("Chave %s não foi encontrada no arquivo .env\n", key)
 	}

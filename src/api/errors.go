@@ -40,3 +40,7 @@ func (app application) badRequestResponse(w http.ResponseWriter, r *http.Request
 func (app application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
+
+func (app application) unauthorizedResponse(w http.ResponseWriter, r *http.Request, message string) {
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
