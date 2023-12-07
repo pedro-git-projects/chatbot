@@ -40,3 +40,24 @@ func (dto LoginUserDTO) Validate(v *validator.Validator) {
 	validMail := err == nil
 	v.Check(validMail, "email", "deve ser um endereço de email válido")
 }
+
+type UpdateUserDTO struct {
+	Email    string   `json:"email,omitempty"`
+	Password string   `json:"password,omitempty"`
+	Name     string   `json:"name,omitempty"`
+	ImageURL string   `json:"imageUrl,omitempty"`
+	Role     UserRole `json:"role,omitempty"`
+}
+
+func (dto UpdateUserDTO) Validate(v *validator.Validator) {
+	if dto.Role != "" {
+		validRole := dto.Role == "user" || dto.Role == "admin" || dto.Role == "collaborator"
+		v.Check(validRole, "role", "deve ser uma das opções (admin|collaborator|user)")
+	}
+
+	if dto.Email != "" {
+		_, err := mail.ParseAddress(dto.Email)
+		validMail := err == nil
+		v.Check(validMail, "email", "deve ser um endereço de email válido")
+	}
+}

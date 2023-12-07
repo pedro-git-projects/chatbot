@@ -54,7 +54,7 @@ func (m UserModel) Get(id int64) (*User, error) {
 		WHERE id = $1
 	`
 
-	var user User
+	user := User{}
 	err := m.DB.QueryRow(query, id).Scan(
 		&user.ID,
 		&user.Email,
@@ -73,8 +73,50 @@ func (m UserModel) Get(id int64) (*User, error) {
 	return &user, nil
 }
 
-func (m UserModel) Update(user *User) error {
-	return nil
+func (m UserModel) Update(id int64, updatedUser *User) (*User, error) {
+	existingUser, err := m.Get(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if updatedUser.Email != "" {
+		existingUser.Email = updatedUser.Email
+	}
+	if updatedUser.Password != "" {
+		existingUser.Password = updatedUser.Password
+	}
+	if updatedUser.Name != "" {
+		existingUser.Name = updatedUser.Name
+	}
+	if updatedUser.Role != "" {
+		existingUser.Role = updatedUser.Role
+	}
+	if updatedUser.ImageURL != "" {
+		existingUser.ImageURL = updatedUser.ImageURL
+	}
+
+	query := `
+		UPDATE users
+		SET email = $1, password = $2, name = $3, role = $4, image_url = $5
+		WHERE id = $6
+		RETURNING id, email, name, role, image_url, created_at
+	`
+
+	err = m.DB.QueryRow(query, existingUser.Email, existingUser.Password, existingUser.Name, existingUser.Role, existingUser.ImageURL, id).
+		Scan(
+			&existingUser.ID,
+			&existingUser.Email,
+			&existingUser.Name,
+			&existingUser.Role,
+			&existingUser.ImageURL,
+			&existingUser.CreatedAt,
+		)
+
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Atualização falhou com erro: %v", err))
+	}
+
+	return existingUser, nil
 }
 
 func (m UserModel) Delete(id int64) error {
