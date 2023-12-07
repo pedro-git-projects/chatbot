@@ -96,3 +96,21 @@ func (app *application) signinUserHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int64)
+	if !ok {
+		app.unauthorizedResponse(w, r, "ID do usuário não foi encontrado no contexto da requisição")
+		return
+	}
+
+	user, err := app.models.Users.Get(userID)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	if err := app.writeJSON(w, http.StatusOK, user, nil); err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/julienschmidt/httprouter"
 )
 
-func (app application) jwtMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (app application) jwtMiddleware(next http.Handler) httprouter.Handle {
+	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			app.unauthorizedResponse(w, r, "Faltando cabeçalhos de autorização")
