@@ -2,7 +2,7 @@ include .env
 export
 
 run:
-	go run ./src/api/*.go
+	go run ./src/*.go
 
 migrate-up:
 	 migrate -path=./migrations -database="$(DATABASE_URL)" up

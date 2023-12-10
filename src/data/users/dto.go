@@ -3,14 +3,14 @@ package users
 import (
 	"net/mail"
 
-	"github.com/pedro-git-projects/chatbot-back/internal/validator"
+	"github.com/pedro-git-projects/chatbot-back/src/data/validator"
 )
 
 type CreateUserDTO struct {
 	Email    string   `json:"email"`
 	Password string   `json:"password"`
 	Name     string   `json:"name"`
-	ImageURL string   `json:"imageUrl"`
+	ImageURL string   `json:"image_url"`
 	Role     UserRole `json:"role"`
 }
 

@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/pedro-git-projects/chatbot-back/internal/data/users"
+	"github.com/pedro-git-projects/chatbot-back/src/data/users"
 )
 
 type Claims struct {
@@ -15,7 +15,7 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func (app application) generateJWT(userID int64, role users.UserRole) (string, error) {
+func (app Application) generateJWT(userID int64, role users.UserRole) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Role:   role,

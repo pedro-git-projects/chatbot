@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (app application) jwtMiddleware(next http.Handler) httprouter.Handle {
+func (app Application) jwtMiddleware(next http.Handler) httprouter.Handle {
 	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -59,6 +59,58 @@ func (app application) jwtMiddleware(next http.Handler) httprouter.Handle {
 		role, ok := claims["role"].(string)
 		if !ok {
 			app.unauthorizedResponse(w, r, "Papel de usuário inválido nas alegações do token")
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "userID", int64(userID))
+		ctx = context.WithValue(ctx, "role", role)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *Application) jwtWebSocketMiddleware(next http.Handler) httprouter.Handle {
+	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		tokenString := r.URL.Query().Get("token")
+
+		if tokenString == "" {
+			http.Error(w, "Missing token in URL", http.StatusUnauthorized)
+			return
+		}
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(app.config.jwtSecret), nil
+		})
+
+		if err != nil {
+			http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		if !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+			return
+		}
+
+		userID, ok := claims["id"].(float64)
+		if !ok {
+			http.Error(w, "Invalid user ID in token claims", http.StatusUnauthorized)
+			return
+		}
+
+		role, ok := claims["role"].(string)
+		if !ok {
+			http.Error(w, "Invalid user role in token claims", http.StatusUnauthorized)
 			return
 		}
 

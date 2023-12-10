@@ -1,20 +1,84 @@
-package main
+package app
 
 import (
-	"bufio"
-	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/pedro-git-projects/chatbot-back/src/data"
+	"github.com/sashabaranov/go-openai"
 )
 
-func (app application) writeJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
+type Application struct {
+	config       *Config
+	logger       *log.Logger
+	models       data.Models
+	openaiClient openai.Client
+	upgrader     websocket.Upgrader
+	clients      map[*websocket.Conn]bool
+	broadcast    chan []byte
+}
+
+func InitializeApp() (*Application, error) {
+	cfg, err := NewConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+
+	app := &Application{
+		config: cfg,
+		logger: logger,
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool { return true },
+		},
+		clients:   make(map[*websocket.Conn]bool),
+		broadcast: make(chan []byte),
+	}
+
+	return app, nil
+}
+
+func (app *Application) Run() error {
+	db, err := openDB(*app.config)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			db.Close()
+		}
+	}()
+
+	app.models = data.NewModels(db)
+	app.logger.Printf("Conexão com o banco de dados estabelecida\n")
+
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", app.config.port),
+		Handler:      app.routes(),
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
+
+	go app.handleMessages()
+	go app.handleConnections()
+
+	app.logger.Printf("Inicializando servidor em modo de %s na porta %s", app.config.env, srv.Addr)
+	err = srv.ListenAndServe()
+	return err
+}
+
+func (app Application) writeJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
 	js, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -32,7 +96,7 @@ func (app application) writeJSON(w http.ResponseWriter, status int, data any, he
 	return nil
 }
 
-func (app application) readJSON(w http.ResponseWriter, r *http.Request, target any) error {
+func (app Application) readJSON(w http.ResponseWriter, r *http.Request, target any) error {
 
 	maxBytes := 1_048_576
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
@@ -81,60 +145,4 @@ func (app application) readJSON(w http.ResponseWriter, r *http.Request, target a
 		return errors.New("O Corpo deve conter um único valor JSON")
 	}
 	return nil
-}
-
-func loadEnv(filename string) (map[string]string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	env := map[string]string{}
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			env[parts[0]] = parts[1]
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return env, nil
-}
-
-func getEnvValue(env map[string]string, key string) (string, bool) {
-	value, exists := env[key]
-	return value, exists
-}
-
-func openDB(cfg config) (*sql.DB, error) {
-	db, err := sql.Open("postgres", cfg.db.dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	db.SetMaxOpenConns(cfg.db.maxOpenConns)
-	db.SetMaxIdleConns(cfg.db.maxIdleConns)
-
-	timeout, err := time.ParseDuration(cfg.db.maxIdleTime)
-	if err != nil {
-		return nil, err
-	}
-	db.SetConnMaxIdleTime(timeout)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err = db.PingContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
 }

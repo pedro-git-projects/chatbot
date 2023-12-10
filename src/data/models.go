@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/pedro-git-projects/chatbot-back/internal/data/users"
+	"github.com/pedro-git-projects/chatbot-back/src/data/users"
 )
 
 var ErrRecordNotFound = errors.New("Registro não encontrado")

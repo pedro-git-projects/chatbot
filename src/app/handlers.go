@@ -1,14 +1,27 @@
-package main
+package app
 
 import (
 	"errors"
 	"net/http"
 
-	"github.com/pedro-git-projects/chatbot-back/internal/data/users"
-	"github.com/pedro-git-projects/chatbot-back/internal/validator"
+	"github.com/pedro-git-projects/chatbot-back/src/data/users"
+	"github.com/pedro-git-projects/chatbot-back/src/data/validator"
 )
 
-func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app Application) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	data := map[string]string{
+		"status":   "disponível",
+		"ambiente": app.config.env,
+		"versão":   app.config.version,
+	}
+
+	err := app.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *Application) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	payload := users.CreateUserDTO{}
 
 	err := app.readJSON(w, r, &payload)
@@ -59,7 +72,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) signinUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) signinUserHandler(w http.ResponseWriter, r *http.Request) {
 	payload := users.LoginUserDTO{}
 
 	err := app.readJSON(w, r, &payload)
@@ -97,7 +110,7 @@ func (app *application) signinUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("userID").(int64)
 	if !ok {
 		app.unauthorizedResponse(w, r, "ID do usuário não foi encontrado no contexto da requisição")
@@ -115,7 +128,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("userID").(int64)
 	if !ok {
 		app.unauthorizedResponse(w, r, "ID do usuário não foi encontrado no contexto da requisição")
@@ -161,7 +174,7 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+func (app *Application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("userID").(int64)
 	if !ok {
 		app.unauthorizedResponse(w, r, "ID do usuário não foi encontrado no contexto da requisição")
