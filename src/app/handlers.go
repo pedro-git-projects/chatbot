@@ -1,18 +1,32 @@
 package app
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/pedro-git-projects/chatbot-back/src/data/users"
 	"github.com/pedro-git-projects/chatbot-back/src/data/validator"
 )
 
+type HealthResponse struct {
+	Status   string `json:"status"`
+	Ambiente string `json:"ambiente"`
+	Versao   string `json:"versão"`
+}
+
+// @Summary Health Check
+// @Description Retorna o status da aplicação.
+// @Tags Health
+// @Produce json
+// @Success 200 {object} HealthResponse "{'status': 'disponível', 'ambiente': 'dev', 'versão': '1.0'}"
+// @Router /health [get]
 func (app Application) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
-		"status":   "disponível",
-		"ambiente": app.config.env,
-		"versão":   app.config.version,
+	data := HealthResponse{
+		Status:   "disponível",
+		Ambiente: app.config.env,
+		Versao:   app.config.version,
 	}
 
 	err := app.writeJSON(w, http.StatusOK, data, nil)
@@ -187,4 +201,28 @@ func (app *Application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *Application) serveSwagger(w http.ResponseWriter, r *http.Request) {
+	file, err := os.Open("src/docs/swagger.json")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	// Decode JSON from the file
+	var data interface{}
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, "Error decoding JSON", http.StatusInternalServerError)
+		return
+	}
+
+	// Set the content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Write the JSON data to the response
+	json.NewEncoder(w).Encode(data)
 }

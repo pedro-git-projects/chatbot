@@ -10,3 +10,5 @@ migrate-up:
 migrate-down:
 	 migrate -path=./migrations -database="$(DATABASE_URL)" down 
 
+swaggo:
+	cd ./src/; swag init

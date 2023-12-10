@@ -1,0 +1,28 @@
+definitions:
+  app.HealthResponse:
+    properties:
+      ambiente:
+        type: string
+      status:
+        type: string
+      versão:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /health:
+    get:
+      description: Retorna o status da aplicação.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{''status'': ''disponível'', ''ambiente'': ''dev'', ''versão'':
+            ''1.0''}'
+          schema:
+            $ref: '#/definitions/app.HealthResponse'
+      summary: Health Check
+      tags:
+      - Health
+swagger: "2.0"
